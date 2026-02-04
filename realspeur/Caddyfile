@@ -1,0 +1,4 @@
+sv-realtime-quest.nl {
+  encode gzip
+  reverse_proxy app:5000
+}
