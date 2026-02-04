@@ -17,7 +17,7 @@ Production (example):
 
 NOTE:
 - If you already created a SQLite db file with the old schema, you should delete it (prague_tour.db)
-  or switch to Postgres and start fresh, because create_all() won’t auto-migrate schemas.
+  or switch to Postgres and start fresh, because create_all() won’t  auto-migrate schemas.
 """
 
 import os
