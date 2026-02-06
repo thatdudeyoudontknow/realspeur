@@ -1,12 +1,5 @@
 """
-RealTime Prague Tour — updated single-file Flask app
-
-Changes vs your previous version:
-- Concurrency-ready config: SECRET_KEY + DATABASE_URL from env (Postgres recommended)
-- Fixed "route" system (no random POIs): Route + RouteStep tables; each team follows an ordered route
-- Photo submissions auto-accept (no approval), but are visible in Admin dashboard (photo feed)
-- Removed pending-submission blocking for players
-- Fixed bug: added TeamPOIProgress.completed_at (your code was setting it without a column)
+RealTime Prague Tour 
 
 Run locally (dev):
   python realtimepythonweb.py 

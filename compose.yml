@@ -13,7 +13,7 @@ services:
       - app
 
   app:
-    image: ghcr.io/thatdudeyoudontknow/realtime-prague-tour:REPLACE_TAG
+    image: ghcr.io/thatdudeyoudontknow/realtime-prague-tour:main
     restart: unless-stopped
     environment:
       # IMPORTANT: set these via .env in production (see below)
