@@ -13,10 +13,12 @@ NOTE:
   or switch to Postgres and start fresh, because create_all() won’t auto-migrate schemas.
 """
 
+from curses import raw
 import os
 import random
 from datetime import datetime
 from pathlib import Path
+import re
 
 from flask import (
     Flask, request, render_template_string, redirect, url_for,
@@ -208,13 +210,13 @@ LOGIN_TEMPLATE = """
     <div class="bg-gray-800 p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-700">
         <h2 class="text-2xl font-bold mb-6 text-center text-white">Prague City Tour</h2>
         <form method="POST">
-            <label class="block text-gray-400 text-sm font-bold mb-2">Member Code / Admin Code</label>
-            <input type="text" name="code" class="w-full p-3 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-yellow-500 mb-6 uppercase" placeholder="ENTER CODE" required>
+            <label class="block text-gray-400 text-sm font-bold mb-2">Name (or ADMIN)</label>
+            <input type="text" name="code" class="w-full p-3 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-yellow-500 mb-6" placeholder="e.g. Luke Skywalker" required>
             <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-4 rounded transition duration-200">
                 Enter App
             </button>
         </form>
-        <p class="mt-4 text-xs text-center text-gray-500">Tip: admin code is ADMIN (change/remove in setup())</p>
+        <p class="mt-4 text-xs text-center text-gray-500">Tip: type your assigned character name. Admin login is ADMIN.</p>
     </div>
 </div>
 {% endblock %}
@@ -226,7 +228,7 @@ TEAM_WAITING = """
 <div class="flex flex-col items-center justify-center min-h-[60vh] text-center">
     <div class="bg-gray-800 p-8 rounded-2xl shadow-xl max-w-sm border border-gray-700">
         <i class="fas fa-users text-5xl text-gray-600 mb-6"></i>
-        <h2 class="text-2xl font-bold mb-4">Welcome, {{ user.code }}</h2>
+        <h2 class="text-2xl font-bold mb-4">Welcome, {{ user.name if user.name else user.code }}</h2>
         <p class="text-gray-400 mb-6">The organizers have not assigned teams yet. Please wait for the event to start.</p>
         <a href="/" class="text-blue-400 hover:underline"><i class="fas fa-sync mr-1"></i> Refresh Status</a>
     </div>
@@ -679,6 +681,13 @@ def complete_current_poi(team: Team, poi: POI):
     db.session.commit()
     return points
 
+def normalize_login(s: str) -> str:
+    s = (s or "").strip().upper()
+    s = re.sub(r"\s+", "-", s)        # spaces -> hyphen
+    s = re.sub(r"[^A-Z0-9\-]", "", s) # remove weird chars
+    return s
+
+
 
 # ==========================================
 # SETUP / SAMPLE DATA
@@ -691,6 +700,45 @@ def setup():
     if not User.query.filter_by(code="ADMIN").first():
         db.session.add(User(code="ADMIN", is_admin=True, name="Organizer"))
         db.session.commit()
+
+    # --- PLAYERS (23 placeholders) ---
+    placeholder_names = [
+        "Luke Skywalker",
+        "Leia Organa",
+        "Han Solo",
+        "Darth Vader",
+        "Obi-Wan Kenobi",
+        "Yoda",
+        "Anakin Skywalker",
+        "Padmé Amidala",
+        "Mace Windu",
+        "Rey",
+        "Harry Potter",
+        "Hermione Granger",
+        "Ron Weasley",
+        "Albus Dumbledore",
+        "Severus Snape",
+        "Minerva McGonagall",
+        "Draco Malfoy",
+        "Luna Lovegood",
+        "Sirius Black",
+        "Neville Longbottom",
+        "Ginny Weasley",
+        "Kylo Ren",
+        "Princess Amidala",
+    ]
+
+    for display_name in placeholder_names:
+        login_code = normalize_login(display_name)  # e.g. "Luke Skywalker" -> "LUKE-SKYWALKER"
+
+        if not User.query.filter_by(code=login_code).first():
+            db.session.add(User(
+                code=login_code,
+                name=display_name,
+                is_admin=False
+            ))
+
+    db.session.commit()
 
     # Sample POIs (only if none exist)
     if not POI.query.first():
@@ -728,17 +776,6 @@ def setup():
         db.session.add_all([p1, p2, p3])
         db.session.commit()
 
-    # Sample players (only if none exist besides ADMIN)
-    if User.query.filter_by(is_admin=False).count() == 0:
-        db.session.add_all([
-            User(code="PLAYER1", name="Alice"),
-            User(code="PLAYER2", name="Bob"),
-            User(code="PLAYER3", name="Charlie"),
-            User(code="PLAYER4", name="David"),
-            User(code="PLAYER5", name="Eve"),
-        ])
-        db.session.commit()
-
     # Sample routes (only if none exist)
     if not Route.query.first():
         r1 = Route(name="Route A (Sample)")
@@ -768,7 +805,8 @@ def setup():
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
-        code = request.form.get("code", "").upper().strip()
+        raw = request.form.get("code", "")
+        code = normalize_login(raw)
         user = User.query.filter_by(code=code).first()
         if user:
             session["user_id"] = user.id
@@ -1111,7 +1149,8 @@ def admin_create_user():
     _require_admin()
 
     if request.method == "POST":
-        code = request.form["code"].upper().strip()
+        raw = request.form["code"]
+        code = normalize_login(raw)
         if User.query.filter_by(code=code).first():
             flash("Code already exists", "error")
         else:
