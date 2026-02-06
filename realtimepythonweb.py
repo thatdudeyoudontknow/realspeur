@@ -9,7 +9,7 @@ Changes vs your previous version:
 - Fixed bug: added TeamPOIProgress.completed_at (your code was setting it without a column)
 
 Run locally (dev):
-  python realtimepythonweb.py
+  python realtimepythonweb.py 
 
 Production (example):
   export SECRET_KEY="..." DATABASE_URL="postgresql+psycopg2://user:pass@127.0.0.1:5432/db"
