@@ -22,4 +22,4 @@ USER appuser
 EXPOSE 5000
 
 # Gunicorn (2 workers is plenty for 24 users)
-CMD ["gunicorn","-w","3","-k","gthread","--threads","4","-t","60","-b","0.0.0.0:5000","realtimepythonweb:app"]
+CMD ["gunicorn","-w","2","-k","gthread","--threads","4","-t","60","-b","0.0.0.0:5000","realtimepythonweb:app"]
